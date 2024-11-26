@@ -1,5 +1,5 @@
 const API_KEY = "8175fA5f6098c5301022f475da32a2aa";
-const API_BASE_URL = "https://ucsdiscosapi.azurewebsites.net/Discos/autenticar";
+const API_BASE_URL = "https://ucsdiscosapi.azurewebsites.net";
 let token = null;
 let offset = 0;
 
@@ -16,7 +16,6 @@ async function authenticate() {
     const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
       method: "POST",
       headers: {
-        "Accept": "*/*",
         "ChaveApi": API_KEY  // Corrigido: enviando a chave como header
       }
     });
