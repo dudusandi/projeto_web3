@@ -4,56 +4,49 @@ let token = null;
 let offset = 0;
 let isLoading = false;
 
-// Inicialização
 document.addEventListener("DOMContentLoaded", async () => {
     try {
-        await initializeApp();
-    } catch (error) {
-        console.error("Erro na inicialização:", error);
-    }
-});
-
-async function initializeApp() {
-    try {
+        // Primeiro, autenticar com a chave API
         token = await authenticate();
         if (token) {
+            // Se autenticação foi bem sucedida, carrega os álbuns iniciais
             await loadAlbums(12);
             setupScrollListener();
         }
     } catch (error) {
         console.error("Erro na inicialização:", error);
     }
-}
+});
 
+// Função de autenticação - usa a chave API
 async function authenticate() {
     showLoading(true);
     try {
         const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
             method: "POST",
             headers: {
-                "ChaveApi": API_KEY,
-                "Content-Type": "text/plain"
+                "ChaveApi": API_KEY // Usa a chave API para autenticação
             }
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Erro na resposta:", errorText);
             throw new Error(`Erro de autenticação: ${response.status}`);
         }
 
-        const tokenText = await response.text();
-        console.log("Token recebido com sucesso");
-        return tokenText;
+        // Retorna o token como texto
+        const tokenResponse = await response.text();
+        return tokenResponse;
 
     } catch (error) {
         console.error("Erro na autenticação:", error);
-        throw error;
+        alert("Erro ao autenticar com a API. Por favor, recarregue a página.");
+        return null;
     } finally {
         showLoading(false);
     }
 }
 
+// Função para carregar álbuns - usa o token de autenticação
 async function loadAlbums(count) {
     if (isLoading || !token) return;
     isLoading = true;
@@ -61,27 +54,23 @@ async function loadAlbums(count) {
 
     try {
         const response = await fetch(`${API_BASE_URL}/Discos?offset=${offset}&limit=${count}`, {
-            method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "text/plain"
+                "Authorization": `Bearer ${token}` // Usa o token para autorização
             }
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Erro na resposta dos álbuns:", errorText);
             throw new Error(`Erro ao carregar álbuns: ${response.status}`);
         }
 
         const albums = await response.json();
         renderAlbums(albums);
-        offset = (offset + count) % 105;
+        offset = (offset + count) % 105; // Volta ao início após 105 registros
 
     } catch (error) {
         console.error("Erro ao carregar álbuns:", error);
         if (error.message.includes("401")) {
-            // Se receber 401 (Unauthorized), tenta renovar o token
+            // Se o token expirou, tenta renovar
             token = await authenticate();
             if (token) {
                 await loadAlbums(count);
@@ -93,20 +82,17 @@ async function loadAlbums(count) {
     }
 }
 
+// Função para carregar detalhes de um álbum - usa o token de autenticação
 async function loadAlbumDetails(id) {
     showLoading(true);
     try {
         const response = await fetch(`${API_BASE_URL}/Discos/${id}`, {
-            method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "text/plain"
+                "Authorization": `Bearer ${token}` // Usa o token para autorização
             }
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Erro na resposta dos detalhes:", errorText);
             throw new Error(`Erro ao carregar detalhes: ${response.status}`);
         }
 
@@ -116,6 +102,7 @@ async function loadAlbumDetails(id) {
     } catch (error) {
         console.error("Erro ao carregar detalhes do álbum:", error);
         if (error.message.includes("401")) {
+            // Se o token expirou, tenta renovar
             token = await authenticate();
             if (token) {
                 await loadAlbumDetails(id);
@@ -124,6 +111,25 @@ async function loadAlbumDetails(id) {
     } finally {
         showLoading(false);
     }
+}
+
+function renderAlbums(albums) {
+    const gallery = document.getElementById("gallery");
+    albums.forEach(album => {
+        const col = document.createElement("div");
+        col.className = "col-12 col-md-6";
+        
+        const img = document.createElement("img");
+        img.src = album.capaUrl;
+        img.alt = album.nome;
+        img.className = "album-img";
+        img.dataset.id = album.id;
+        
+        img.addEventListener("click", () => loadAlbumDetails(album.id));
+        
+        col.appendChild(img);
+        gallery.appendChild(col);
+    });
 }
 
 function showModal(album) {
@@ -153,8 +159,7 @@ function showLoading(show) {
 
 function setupScrollListener() {
     window.addEventListener("scroll", () => {
-        const threshold = 100;
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - threshold && !isLoading) {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
             loadAlbums(4);
         }
     });
