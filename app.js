@@ -53,7 +53,7 @@ async function loadImages() {
     toggleLoading(true);
 
     try {
-        const response = await fetch(`https://ucsdiscosapi.azurewebsites.net/Discos/records`, {
+        const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/records', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
