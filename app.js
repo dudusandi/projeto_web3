@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Função para autenticar e obter o token
 async function authenticate() {
     try {
-            const response = await fetch('https://ucsdiscosapi.azurewebsites.net/api/auth', {
+            const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/autenticar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
