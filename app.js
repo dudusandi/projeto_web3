@@ -27,13 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Função para autenticar e obter o token
 async function authenticate() {
     try {
-        const response = await fetch('https://ucsdiscosapi.azurewebsites.net/api/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey
-            }
-        });
+            const response = await fetch('https://ucsdiscosapi.azurewebsites.net/api/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ChaveApi': apiKey // chave API enviada no cabeçalho
+                }
+            });
 
         if (!response.ok) {
             throw new Error('Falha na autenticação');
