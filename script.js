@@ -1,4 +1,3 @@
-// Configurações da API
 const API_KEY = "8175fA5f6098c5301022f475da32a2aa";
 const API_BASE_URL = "https://ucsdiscosapi.azurewebsites.net";
 let token = null;
@@ -7,14 +6,17 @@ let isLoading = false;
 
 // Inicialização
 document.addEventListener("DOMContentLoaded", async () => {
-    await initializeApp();
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error("Erro na inicialização:", error);
+    }
 });
 
 async function initializeApp() {
     try {
         token = await authenticate();
         if (token) {
-            console.log("Token obtido:", token); // Para debug
             await loadAlbums(12);
             setupScrollListener();
         }
@@ -23,111 +25,107 @@ async function initializeApp() {
     }
 }
 
-// Autenticação
 async function authenticate() {
     showLoading(true);
     try {
         const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
             method: "POST",
             headers: {
-                "ChaveApi": API_KEY
+                "ChaveApi": API_KEY,
+                "Content-Type": "text/plain"
             }
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Erro na resposta:", errorText);
             throw new Error(`Erro de autenticação: ${response.status}`);
         }
 
-        // Lê o token como texto puro, não como JSON
         const tokenText = await response.text();
-        console.log("Token recebido:", tokenText); // Para debug
-        return tokenText.trim(); // Remove espaços em branco extras, se houver
+        console.log("Token recebido com sucesso");
+        return tokenText;
+
     } catch (error) {
         console.error("Erro na autenticação:", error);
-        alert("Erro ao autenticar com a API. Por favor, recarregue a página.");
         throw error;
     } finally {
         showLoading(false);
     }
 }
 
-// Carregamento de Álbuns
 async function loadAlbums(count) {
     if (isLoading || !token) return;
     isLoading = true;
     showLoading(true);
 
     try {
-        console.log("Fazendo requisição com token:", token); // Para debug
         const response = await fetch(`${API_BASE_URL}/Discos?offset=${offset}&limit=${count}`, {
+            method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "text/plain"
             }
         });
 
         if (!response.ok) {
-            console.log("Resposta não ok:", await response.text()); // Para debug
+            const errorText = await response.text();
+            console.error("Erro na resposta dos álbuns:", errorText);
             throw new Error(`Erro ao carregar álbuns: ${response.status}`);
         }
 
         const albums = await response.json();
         renderAlbums(albums);
         offset = (offset + count) % 105;
+
     } catch (error) {
         console.error("Erro ao carregar álbuns:", error);
-        alert("Erro ao carregar álbuns. Tente novamente mais tarde.");
+        if (error.message.includes("401")) {
+            // Se receber 401 (Unauthorized), tenta renovar o token
+            token = await authenticate();
+            if (token) {
+                await loadAlbums(count);
+            }
+        }
     } finally {
         showLoading(false);
         isLoading = false;
     }
 }
 
-// Renderização de Álbuns
-function renderAlbums(albums) {
-    const gallery = document.getElementById("gallery");
-    
-    albums.forEach(album => {
-        const col = document.createElement("div");
-        col.className = "col-12 col-md-6";
-        
-        const img = document.createElement("img");
-        img.src = album.capaUrl;
-        img.alt = album.nome;
-        img.className = "album-img";
-        img.dataset.id = album.id;
-        
-        img.addEventListener("click", () => loadAlbumDetails(album.id));
-        
-        col.appendChild(img);
-        gallery.appendChild(col);
-    });
-}
-
-// Carregamento de Detalhes do Álbum
 async function loadAlbumDetails(id) {
     showLoading(true);
     try {
         const response = await fetch(`${API_BASE_URL}/Discos/${id}`, {
+            method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "text/plain"
             }
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Erro na resposta dos detalhes:", errorText);
             throw new Error(`Erro ao carregar detalhes: ${response.status}`);
         }
 
         const album = await response.json();
         showModal(album);
+
     } catch (error) {
         console.error("Erro ao carregar detalhes do álbum:", error);
-        alert("Erro ao carregar detalhes do álbum. Tente novamente.");
+        if (error.message.includes("401")) {
+            token = await authenticate();
+            if (token) {
+                await loadAlbumDetails(id);
+            }
+        }
     } finally {
         showLoading(false);
     }
 }
 
-// Exibição do Modal
 function showModal(album) {
     const modal = new bootstrap.Modal(document.getElementById("albumModal"));
     document.getElementById("albumModalLabel").textContent = album.nome;
@@ -148,16 +146,15 @@ function showModal(album) {
     modal.show();
 }
 
-// Controle de Loading
 function showLoading(show) {
     const loading = document.getElementById("loading");
     loading.style.display = show ? "flex" : "none";
 }
 
-// Configuração do Scroll Infinito
 function setupScrollListener() {
     window.addEventListener("scroll", () => {
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+        const threshold = 100;
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - threshold && !isLoading) {
             loadAlbums(4);
         }
     });
