@@ -11,10 +11,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function initializeApp() {
-    token = await authenticate();
-    if (token) {
-        await loadAlbums(12);
-        setupScrollListener();
+    try {
+        token = await authenticate();
+        if (token) {
+            console.log("Token obtido:", token); // Para debug
+            await loadAlbums(12);
+            setupScrollListener();
+        }
+    } catch (error) {
+        console.error("Erro na inicialização:", error);
     }
 }
 
@@ -25,7 +30,6 @@ async function authenticate() {
         const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
             method: "POST",
             headers: {
-                "Accept": "*/*",
                 "ChaveApi": API_KEY
             }
         });
@@ -34,12 +38,14 @@ async function authenticate() {
             throw new Error(`Erro de autenticação: ${response.status}`);
         }
 
-        const token = await response.text();
-        return token;
+        // Lê o token como texto puro, não como JSON
+        const tokenText = await response.text();
+        console.log("Token recebido:", tokenText); // Para debug
+        return tokenText.trim(); // Remove espaços em branco extras, se houver
     } catch (error) {
         console.error("Erro na autenticação:", error);
         alert("Erro ao autenticar com a API. Por favor, recarregue a página.");
-        return null;
+        throw error;
     } finally {
         showLoading(false);
     }
@@ -47,25 +53,26 @@ async function authenticate() {
 
 // Carregamento de Álbuns
 async function loadAlbums(count) {
-    if (isLoading) return;
+    if (isLoading || !token) return;
     isLoading = true;
     showLoading(true);
 
     try {
+        console.log("Fazendo requisição com token:", token); // Para debug
         const response = await fetch(`${API_BASE_URL}/Discos?offset=${offset}&limit=${count}`, {
             headers: {
-                "Accept": "*/*",
                 "Authorization": `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
+            console.log("Resposta não ok:", await response.text()); // Para debug
             throw new Error(`Erro ao carregar álbuns: ${response.status}`);
         }
 
         const albums = await response.json();
         renderAlbums(albums);
-        offset = (offset + count) % 105; // Reinicia após 105 registros
+        offset = (offset + count) % 105;
     } catch (error) {
         console.error("Erro ao carregar álbuns:", error);
         alert("Erro ao carregar álbuns. Tente novamente mais tarde.");
@@ -102,7 +109,6 @@ async function loadAlbumDetails(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/Discos/${id}`, {
             headers: {
-                "Accept": "*/*",
                 "Authorization": `Bearer ${token}`
             }
         });
