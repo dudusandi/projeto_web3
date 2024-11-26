@@ -16,10 +16,9 @@ async function authenticate() {
     const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ apiKey: API_KEY })  // Alterado de 'chave' para 'apiKey'
+        "Accept": "*/*",
+        "ChaveApi": API_KEY  // Corrigido: enviando a chave como header
+      }
     });
 
     if (!response.ok) {
@@ -41,7 +40,7 @@ async function loadAlbums(count) {
     const response = await fetch(`${API_BASE_URL}/Discos?offset=${offset}&limit=${count}`, {
       headers: {
         "Authorization": `Bearer ${token}`,
-        "Accept": "application/json"
+        "Accept": "*/*"
       }
     });
 
@@ -64,7 +63,7 @@ async function loadAlbumDetails(id) {
     const response = await fetch(`${API_BASE_URL}/Discos/${id}`, {
       headers: {
         "Authorization": `Bearer ${token}`,
-        "Accept": "application/json"
+        "Accept": "*/*"
       }
     });
 
@@ -79,7 +78,6 @@ async function loadAlbumDetails(id) {
   }
 }
 
-// O resto do código permanece o mesmo
 function renderAlbums(albums) {
   const gallery = document.getElementById("gallery");
   albums.forEach(album => {
