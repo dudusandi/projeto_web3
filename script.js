@@ -1,5 +1,5 @@
 const API_KEY = "8175fA5f6098c5301022f475da32a2aa";
-const API_URL = "https://ucsdiscosapi.azurewebsites.net/Discos/autenticar";
+const API_BASE_URL = "https://ucsdiscosapi.azurewebsites.net";
 let token = null;
 let offset = 0;
 
@@ -13,11 +13,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function authenticate() {
   try {
-    const response = await fetch(`${API_URL}/autenticar`, {
+    const response = await fetch(`${API_BASE_URL}/Discos/autenticar`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chave: API_KEY })
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ apiKey: API_KEY })  // Alterado de 'chave' para 'apiKey'
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     return data.token;
   } catch (error) {
@@ -30,12 +38,20 @@ async function authenticate() {
 async function loadAlbums(count) {
   showLoading(true);
   try {
-    const response = await fetch(`${API_URL}/albums?offset=${offset}&limit=${count}`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const response = await fetch(`${API_BASE_URL}/Discos?offset=${offset}&limit=${count}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      }
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const albums = await response.json();
     renderAlbums(albums);
-    offset = (offset + count) % 105; // Reinicia o ciclo após 105 registros
+    offset = (offset + count) % 105;
   } catch (error) {
     console.error("Erro ao carregar álbuns:", error);
   } finally {
@@ -43,6 +59,27 @@ async function loadAlbums(count) {
   }
 }
 
+async function loadAlbumDetails(id) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/Discos/${id}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const album = await response.json();
+    showModal(album);
+  } catch (error) {
+    console.error("Erro ao carregar detalhes do álbum:", error);
+  }
+}
+
+// O resto do código permanece o mesmo
 function renderAlbums(albums) {
   const gallery = document.getElementById("gallery");
   albums.forEach(album => {
@@ -52,18 +89,6 @@ function renderAlbums(albums) {
     col.querySelector("img").addEventListener("click", () => loadAlbumDetails(album.id));
     gallery.appendChild(col);
   });
-}
-
-async function loadAlbumDetails(id) {
-  try {
-    const response = await fetch(`${API_URL}/albums/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const album = await response.json();
-    showModal(album);
-  } catch (error) {
-    console.error("Erro ao carregar detalhes do álbum:", error);
-  }
 }
 
 function showModal(album) {
