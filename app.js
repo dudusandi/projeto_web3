@@ -58,7 +58,6 @@ async function loadImages() {
             }
         });
         const data = await response.json();
-        console.log('Dados recebidos:', data);
         renderImages(data);
     } catch (error) {
         console.error('Erro ao carregar imagens:', error);
