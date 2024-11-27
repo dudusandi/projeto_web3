@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Autenticar e obter o token
     await authenticate();
 
+    if (!token) {
+        console.error('Token não foi obtido. Verifique a autenticação.');
+        return;
+    }
+
     // 2. Carregar as primeiras imagens
     loadImages();
 
@@ -24,60 +29,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 });
 
-// Função para autenticar e obter o token
-// Função para autenticar e obter o token
 async function authenticate() {
     try {
         const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/autenticar', {
             method: 'POST',
             headers: {
-                'accept' : '*/*',
+                'accept': '*/*',                
                 'ChaveApi': apiKey,
             }
         });
 
-        // Ensure the response is OK and the content type is JSON
         if (!response.ok) {
             throw new Error('Falha na autenticação');
         }
 
-        const textResponse = await response.text(); // Read the response as plain text
-        console.log('API response:', textResponse); // Log the response for debugging
-
-        // Attempt to parse the response as JSON
-        try {
-            const data = JSON.parse(textResponse);
-            token = data.token;
-        } catch (jsonError) {
-            throw new Error('Resposta não é JSON válida');
-        }
-        
+        token = (await response.text()).trim();
+        console.log('Token recebido:', token);
     } catch (error) {
         console.error('Erro na autenticação:', error);
     }
 }
 
-// Função para carregar as imagens
 async function loadImages() {
     isLoading = true;
     toggleLoading(true);
 
+    // Construir a URL com os parâmetros
+    const url = `https://ucsdiscosapi.azurewebsites.net/Discos/records?numeroInicio=${(currentPage - 1) * pageSize + 1}&quantidade=${pageSize}`;
+    console.log('Tentando carregar imagens da URL:', url);
+    console.log('Token usado:', token);
+
     try {
-        const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/records', {
+        const response = await fetch(url, {
+            method: 'GET',
             headers: {
-                'TokenApiUCS': token   // Use your token here
+                'accept': '*/*',
+                'TokenApiUCS': token,
             }
         });
 
+        // Log detalhado do erro
         if (!response.ok) {
-            throw new Error('Erro ao carregar as imagens');
+            const errorText = await response.text();
+            console.log('Status:', response.status);
+            console.log('Status Text:', response.statusText);
+            console.log('Resposta do erro:', errorText);
+            console.log('Headers enviados:', {
+                'accept': '*/*',
+                'TokenApiUCS': token
+            });
+            throw new Error(`Erro ao carregar as imagens: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log('Dados recebidos:', data);
 
-        // Caso não haja mais dados
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             isEndOfData = true;
+            console.log('Nenhuma imagem encontrada.');
+            return;
         }
 
         renderImages(data);
@@ -88,13 +98,10 @@ async function loadImages() {
         toggleLoading(false);
     }
 }
-
-// Função para exibir o loading
 function toggleLoading(isVisible) {
     loadingElement.style.display = isVisible ? 'block' : 'none';
 }
 
-// Função para renderizar as imagens
 function renderImages(images) {
     images.forEach(image => {
         const col = document.createElement('div');
@@ -106,8 +113,8 @@ function renderImages(images) {
 
         const img = document.createElement('img');
         img.classList.add('card-img-top');
-        img.src = image.capa;
-        img.alt = image.titulo;
+        img.src = `data:image/jpeg;base64,${image.imagemEmBase64}`; // Corrigido: adiciona o prefixo para base64
+        img.alt = image.descricaoPrimaria; // Corrigido: usa a descrição primária como alt
 
         card.appendChild(img);
         col.appendChild(card);
@@ -115,15 +122,15 @@ function renderImages(images) {
     });
 }
 
-// Função para exibir a modal com detalhes
+// Também precisamos atualizar a função showModal
 function showModal(image) {
     const modalTitle = document.getElementById('albumModalLabel');
     const modalImage = document.getElementById('modal-image');
     const modalDescription = document.getElementById('modal-description');
 
-    modalTitle.innerText = image.titulo;
-    modalImage.src = image.capa;
-    modalDescription.innerText = image.descricao;
+    modalTitle.innerText = image.descricaoPrimaria;
+    modalImage.src = `data:image/jpeg;base64,${image.imagemEmBase64}`;
+    modalDescription.innerText = image.descricaoSecundaria;
 
     const modal = new bootstrap.Modal(document.getElementById('albumModal'));
     modal.show();
