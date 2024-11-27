@@ -31,7 +31,8 @@ async function authenticate() {
         const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/autenticar', {
             method: 'POST',
             headers: {
-                'ChaveApi': apiKey // chave API enviada no cabeçalho
+                'accept' : '*/*',
+                'ChaveApi': apiKey,
             }
         });
 
