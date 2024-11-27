@@ -25,22 +25,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Função para autenticar e obter o token
+// Função para autenticar e obter o token
 async function authenticate() {
     try {
-            const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/autenticar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain',
-                    'ChaveApi': apiKey // chave API enviada no cabeçalho
-                }
-            });
+        const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/autenticar', {
+            method: 'POST',
+            headers: {
+                'ChaveApi': apiKey // chave API enviada no cabeçalho
+            }
+        });
 
+        // Ensure the response is OK and the content type is JSON
         if (!response.ok) {
             throw new Error('Falha na autenticação');
         }
 
-        const data = await response.json();
-        token = data.token;
+        const textResponse = await response.text(); // Read the response as plain text
+        console.log('API response:', textResponse); // Log the response for debugging
+
+        // Attempt to parse the response as JSON
+        try {
+            const data = JSON.parse(textResponse);
+            token = data.token;
+        } catch (jsonError) {
+            throw new Error('Resposta não é JSON válida');
+        }
+        
     } catch (error) {
         console.error('Erro na autenticação:', error);
     }
