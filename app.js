@@ -9,18 +9,13 @@ const loadingElement = document.getElementById('loading');
 const imageGallery = document.getElementById('image-gallery');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Autenticar e obter o token
     await authenticate();
 
     if (!token) {
         console.error('Token não foi obtido. Verifique a autenticação.');
         return;
     }
-
-    // 2. Carregar as primeiras imagens
     loadImages();
-
-    // 3. Configurar rolagem infinita
     window.onscroll = () => {
         if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !isLoading && !isEndOfData) {
             currentPage++;
@@ -54,7 +49,7 @@ async function loadImages() {
     isLoading = true;
     toggleLoading(true);
 
-    // Construir a URL com os parâmetros
+
     const url = `https://ucsdiscosapi.azurewebsites.net/Discos/records?numeroInicio=${(currentPage - 1) * pageSize + 1}&quantidade=${pageSize}`;
     console.log('Tentando carregar imagens da URL:', url);
     console.log('Token usado:', token);
@@ -68,18 +63,6 @@ async function loadImages() {
             }
         });
 
-        // Log detalhado do erro
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.log('Status:', response.status);
-            console.log('Status Text:', response.statusText);
-            console.log('Resposta do erro:', errorText);
-            console.log('Headers enviados:', {
-                'accept': '*/*',
-                'TokenApiUCS': token
-            });
-            throw new Error(`Erro ao carregar as imagens: ${response.status} ${response.statusText}`);
-        }
 
         const data = await response.json();
         console.log('Dados recebidos:', data);
@@ -113,8 +96,8 @@ function renderImages(images) {
 
         const img = document.createElement('img');
         img.classList.add('card-img-top');
-        img.src = `data:image/jpeg;base64,${image.imagemEmBase64}`; // Corrigido: adiciona o prefixo para base64
-        img.alt = image.descricaoPrimaria; // Corrigido: usa a descrição primária como alt
+        img.src = `data:image/jpeg;base64,${image.imagemEmBase64}`; 
+        img.alt = image.descricaoPrimaria; 
 
         card.appendChild(img);
         col.appendChild(card);
@@ -122,7 +105,7 @@ function renderImages(images) {
     });
 }
 
-// Também precisamos atualizar a função showModal
+
 function showModal(image) {
     const modalTitle = document.getElementById('albumModalLabel');
     const modalImage = document.getElementById('modal-image');
