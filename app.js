@@ -62,7 +62,7 @@ async function loadImages() {
     toggleLoading(true);
 
     try {
-        const response = await fetch(`https://ucsdiscosapi.azurewebsites.net/Discos/records?numeroInicio=${currentPage}&quantidade=${pageSize}`, {
+        const response = await fetch('https://ucsdiscosapi.azurewebsites.net/Discos/records', {
             headers: {
                 'TokenApiUCS': 'XgDRcr5TlkaiK6V3DRq06A=='  // Use your token here
             }
