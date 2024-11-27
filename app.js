@@ -48,12 +48,7 @@ async function authenticate() {
 async function loadImages() {
     isLoading = true;
     toggleLoading(true);
-
-
     const url = `https://ucsdiscosapi.azurewebsites.net/Discos/records?numeroInicio=${(currentPage - 1) * pageSize + 1}&quantidade=${pageSize}`;
-    console.log('Tentando carregar imagens da URL:', url);
-    console.log('Token usado:', token);
-
     try {
         const response = await fetch(url, {
             method: 'GET',
@@ -62,17 +57,8 @@ async function loadImages() {
                 'TokenApiUCS': token,
             }
         });
-
-
         const data = await response.json();
         console.log('Dados recebidos:', data);
-
-        if (!data || data.length === 0) {
-            isEndOfData = true;
-            console.log('Nenhuma imagem encontrada.');
-            return;
-        }
-
         renderImages(data);
     } catch (error) {
         console.error('Erro ao carregar imagens:', error);
